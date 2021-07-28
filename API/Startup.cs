@@ -1,3 +1,4 @@
+using API.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -26,6 +27,11 @@ namespace API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.ConfigureSqlContext(Configuration);
+            services.ConfigureIdentity();
+            services.ConfigureCors();
+            services.AddAutoMapper(typeof(Startup));
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -37,6 +43,9 @@ namespace API
             }
 
             app.UseHttpsRedirection();
+
+            app.UseCors("CorsPolicy");
+
 
             app.UseRouting();
 
