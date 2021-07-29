@@ -28,7 +28,8 @@ namespace API
         {
             services.AddControllers();
             services.ConfigureSqlContext(Configuration);
-            services.ConfigureIdentity();
+            services.ConfigureIdentity(Configuration);
+            services.AddScoped<JwtHandler>();
             services.ConfigureCors();
             services.AddAutoMapper(typeof(Startup));
 
@@ -49,6 +50,7 @@ namespace API
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
