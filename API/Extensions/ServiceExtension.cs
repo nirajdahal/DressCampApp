@@ -34,7 +34,7 @@ namespace API.Extensions
                        opts.UseSqlServer(configuration.GetConnectionString("SqlConnection"), b => b.MigrationsAssembly("API")));
         public static void ConfigureIdentity(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<RepositoryContext>();
+            services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<RepositoryContext>().AddDefaultTokenProviders();
             var jwtSettings = configuration.GetSection("JwtSettings");
             services.AddAuthentication(opt =>
             {

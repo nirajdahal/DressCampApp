@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers
 {
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(Roles ="Admin")]
     [ApiController]
     public class TestController : ControllerBase
     {
@@ -14,7 +14,7 @@ namespace API.Controllers
         [HttpGet]
         public IActionResult GetTestValues()
         {
-            return Ok("You are welcome");
+            return Ok();
         }
     }
 }

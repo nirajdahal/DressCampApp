@@ -22,6 +22,7 @@ namespace API.Exceptions
         {
             var message = statusCode switch
             {
+
                 400 => "You have made a BadRequest",
                 401 => "Sorry you are not authorized ",
                 404 => "THe resource you are looking for cannot be found",

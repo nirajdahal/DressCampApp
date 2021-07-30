@@ -11,6 +11,8 @@ namespace Core.Dtos.User
         public string Email { get; set; }
         [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; }
+
+
     }
 
     public class LoginResponse
@@ -18,6 +20,10 @@ namespace Core.Dtos.User
         public string Token { get; set; }
 
         public bool isAuthenticationSuccesfull { get; set; }
+
+        public string UserName { get; set; }
+
+        public string UserEmail { get; set; }
     }
 
 }

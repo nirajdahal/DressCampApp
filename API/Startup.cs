@@ -1,5 +1,8 @@
 using API.Extensions;
 using API.Middlewares;
+using Core.Interfaces;
+using Core.Models;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -32,6 +35,8 @@ namespace API
             services.ConfigureIdentity(Configuration);
             services.AddScoped<JwtHandler>();
             services.ConfigureCors();
+            services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
+            services.AddTransient<IMailService, MailService>();
             services.AddAutoMapper(typeof(Startup));
             //order for validation error matters
             services.ConfigureValidationError();
