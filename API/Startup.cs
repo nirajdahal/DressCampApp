@@ -1,4 +1,5 @@
 using API.Extensions;
+using API.Middlewares;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -32,16 +33,18 @@ namespace API
             services.AddScoped<JwtHandler>();
             services.ConfigureCors();
             services.AddAutoMapper(typeof(Startup));
+            //order for validation error matters
+            services.ConfigureValidationError();
 
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
+            //Middleware for handling 500 error
+            app.UseMiddleware<DefaultExceptionHandlerMiddleware>();
+
+            app.UseStatusCodePagesWithReExecute("/errors/{0}");
 
             app.UseHttpsRedirection();
 

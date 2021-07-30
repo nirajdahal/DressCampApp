@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using API.Exceptions;
+using AutoMapper;
 using Core.Dtos.User;
 using Core.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -28,9 +29,13 @@ namespace API.Controllers
         [HttpPost("Registration")]
         public async Task<IActionResult> RegisterUser([FromBody] UserForRegistrationDto userForRegistration)
         {
-            if (userForRegistration == null || !ModelState.IsValid)
-                return BadRequest();
-
+            if (userForRegistration == null)
+                return BadRequest(new APIResponse(400, "Bad Request Has Been Made"));
+            var emailExist = _userManager.FindByEmailAsync(userForRegistration.Email);
+            if (emailExist !=null)
+            {
+                return new BadRequestObjectResult(new APIValidationErrorResponse { Errors = new[] { "Email address is in use" } });
+            }
             var user = _mapper.Map<User>(userForRegistration);
             var result = await _userManager.CreateAsync(user, userForRegistration.Password);
             if (!result.Succeeded)
@@ -46,12 +51,12 @@ namespace API.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] UserForAuthenticationDto userForAuthentication)
         {
-            try
-            {
-                var user = await _userManager.FindByEmailAsync(userForAuthentication.Email);
+            
+            var user = await _userManager.FindByEmailAsync(userForAuthentication.Email);
                 var checkPassword = await _userManager.CheckPasswordAsync(user, userForAuthentication.Password);
+            
                 if (user == null || !checkPassword)
-                    return Unauthorized("Either Password or Email is wrong");
+                    return Unauthorized(new APIResponse(401, "Wrong Email or Password"));
                 var signingCredentials = _jwtHandler.GetSigningCredentials();
                 var claims = _jwtHandler.GetClaims(user);
                 var tokenOptions = _jwtHandler.GenerateTokenOptions(signingCredentials, claims);
@@ -64,12 +69,7 @@ namespace API.Controllers
                 return Ok(response);
             }
 
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                return Ok();
-            }
-
+         
         }
     }
-}
+
