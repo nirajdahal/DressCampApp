@@ -34,7 +34,17 @@ namespace API.Extensions
                        opts.UseSqlServer(configuration.GetConnectionString("SqlConnection"), b => b.MigrationsAssembly("API")));
         public static void ConfigureIdentity(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<RepositoryContext>().AddDefaultTokenProviders();
+            services.AddIdentity<User, IdentityRole>(opt => {
+
+
+                opt.Password.RequiredLength = 7;
+                opt.Password.RequireDigit = false;
+                opt.User.RequireUniqueEmail = true;
+                opt.Lockout.AllowedForNewUsers = true;
+                opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(2);
+                opt.Lockout.MaxFailedAccessAttempts = 3;
+
+            }).AddEntityFrameworkStores<RepositoryContext>().AddDefaultTokenProviders();
             var jwtSettings = configuration.GetSection("JwtSettings");
             services.AddAuthentication(opt =>
             {

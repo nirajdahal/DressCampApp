@@ -85,8 +85,21 @@ namespace API.Controllers
             }
                 var checkPassword = await _userManager.CheckPasswordAsync(user, userForAuthentication.Password);
             
-                if ( !checkPassword)
-                    return Unauthorized(new APIResponse(401, "Wrong Email or Password"));
+                if (!checkPassword)
+            {
+                await _userManager.AccessFailedAsync(user);
+
+                if (await _userManager.IsLockedOutAsync(user))
+                {
+                    var content = $"Your account is locked out. To reset the password click this link: {userForAuthentication.clientURI}";
+                    var message = new MailRequest { ToEmail = user.Email, Subject = "Account Loclout", Body = content };
+                    await _mailService.SendEmailAsync(message);
+
+                    return Unauthorized(new APIResponse(401, "Your email has been locked out. Check you email"));
+                }
+                return Unauthorized(new APIResponse(401, "Wrong Email or Password"));
+            }
+                    
                 var signingCredentials = _jwtHandler.GetSigningCredentials();
                 var claims =await _jwtHandler.GetClaims(user);
                 var tokenOptions = _jwtHandler.GenerateTokenOptions(signingCredentials, claims);

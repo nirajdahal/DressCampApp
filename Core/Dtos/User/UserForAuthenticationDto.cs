@@ -12,7 +12,7 @@ namespace Core.Dtos.User
         [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; }
 
-
+        public string clientURI { get; set; }
     }
 
     public class LoginResponse
