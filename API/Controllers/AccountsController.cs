@@ -39,6 +39,8 @@ namespace API.Controllers
         {
             if (userForRegistration == null)
                 return BadRequest(new APIResponse(400, "Bad Request Has Been Made"));
+
+
             var emailExist = await _userManager.FindByEmailAsync(userForRegistration.Email);
             if (emailExist !=null)
             {
@@ -53,6 +55,16 @@ namespace API.Controllers
 
                 return BadRequest(errors);
             }
+
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var param = new Dictionary<string, string>
+    {
+        {"token", token },
+        {"email", user.Email }
+    };
+            var callback = QueryHelpers.AddQueryString(userForRegistration.ClientURI, param);
+            var message = new MailRequest { ToEmail = user.Email, Subject = "Email Confirmation Token", Body = callback };
+            await _mailService.SendEmailAsync(message);
             await _userManager.AddToRoleAsync(user, "Customer");
             return StatusCode(201);
         }
@@ -62,9 +74,18 @@ namespace API.Controllers
         {
             
             var user = await _userManager.FindByEmailAsync(userForAuthentication.Email);
+
+            if(user == null)
+            {
+                return Unauthorized(new APIResponse(401, "Wrong Email or Password"));
+            }
+
+            if(!await _userManager.IsEmailConfirmedAsync(user)){
+                return Unauthorized(new APIResponse(401, "Email Hasnot Been Confirmed"));
+            }
                 var checkPassword = await _userManager.CheckPasswordAsync(user, userForAuthentication.Password);
             
-                if (user == null || !checkPassword)
+                if ( !checkPassword)
                     return Unauthorized(new APIResponse(401, "Wrong Email or Password"));
                 var signingCredentials = _jwtHandler.GetSigningCredentials();
                 var claims =await _jwtHandler.GetClaims(user);
@@ -116,6 +137,17 @@ namespace API.Controllers
             return Ok();
         }
 
+        [HttpGet("EmailConfirmation")]
+        public async Task<IActionResult> EmailConfirmation([FromQuery] string email, [FromQuery] string token)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+                return BadRequest("Invalid Email Confirmation Request");
+            var confirmResult = await _userManager.ConfirmEmailAsync(user, token);
+            if (!confirmResult.Succeeded)
+                return BadRequest("Invalid Email Confirmation Request");
+            return Ok();
+        }
     }
     }
 

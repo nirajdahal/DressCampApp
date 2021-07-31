@@ -10,8 +10,6 @@ namespace Core.Dtos.User
         [Required]
         [MaxLength(50, ErrorMessage = "Maximum length for the User Name is 50 characters.")]
         public string UserName { get; set; }
-
-      
        
         [Required(ErrorMessage = "Email is required.")]
 
@@ -20,6 +18,8 @@ namespace Core.Dtos.User
         public string Password { get; set; }
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; }
+
+        public string ClientURI { get; set; }
     }
 }
 
