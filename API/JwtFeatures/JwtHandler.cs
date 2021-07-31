@@ -1,4 +1,6 @@
-﻿using Core.Entities.Identity;
+﻿using Core.Dtos.User;
+using Core.Entities.Identity;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -14,13 +16,15 @@ public class JwtHandler
     private readonly IConfiguration _configuration;
     private readonly IConfigurationSection _jwtSettings;
     private readonly UserManager<User> _userManager;
+    private readonly IConfigurationSection _goolgeSettings;
     public JwtHandler(IConfiguration configuration, UserManager<User> userManager)
     {
   
         _configuration = configuration;
         _jwtSettings = _configuration.GetSection("JwtSettings");
        _userManager = userManager;
-}
+        _goolgeSettings = _configuration.GetSection("Google");
+    }
     public SigningCredentials GetSigningCredentials()
     {
         var key = Encoding.UTF8.GetBytes(_jwtSettings.GetSection("securityKey").Value);
@@ -49,5 +53,20 @@ public class JwtHandler
             expires: DateTime.Now.AddMinutes(Convert.ToDouble(_jwtSettings.GetSection("expiryInMinutes").Value)),
             signingCredentials: signingCredentials);
         return tokenOptions;
+    }
+
+
+    public async Task<GoogleJsonWebSignature.Payload> VerifyGoogleToken(ExternalAuthDto externalAuth)
+    {
+       
+            var clientId = _goolgeSettings.GetSection("ClientId").Value;
+            var settings = new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = new List<string>() { _goolgeSettings.GetSection("ClientId").Value }
+            };
+            var payload = await GoogleJsonWebSignature.ValidateAsync(externalAuth.IdToken, settings);
+            return payload;
+       
+        
     }
 }

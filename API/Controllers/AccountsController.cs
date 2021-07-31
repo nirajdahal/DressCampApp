@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -25,12 +26,14 @@ namespace API.Controllers
         private readonly IMapper _mapper;
         private readonly JwtHandler _jwtHandler;
         private readonly IMailService _mailService;
-        public AccountsController(UserManager<User> userManager, IMapper mapper,  JwtHandler jwtHandler, IMailService mailService)
+
+        public AccountsController(UserManager<User> userManager, IMapper mapper, JwtHandler jwtHandler, IMailService mailService)
         {
             _userManager = userManager;
             _mapper = mapper;
             _jwtHandler = jwtHandler;
             _mailService = mailService;
+
         }
 
 
@@ -42,13 +45,13 @@ namespace API.Controllers
 
 
             var emailExist = await _userManager.FindByEmailAsync(userForRegistration.Email);
-            if (emailExist !=null)
+            if (emailExist != null)
             {
                 return new BadRequestObjectResult(new APIValidationErrorResponse { Errors = new[] { "Email address is in use" } });
             }
             var user = _mapper.Map<User>(userForRegistration);
             var result = await _userManager.CreateAsync(user, userForRegistration.Password);
-            
+
             if (!result.Succeeded)
             {
                 var errors = result.Errors.Select(e => e.Description);
@@ -72,20 +75,21 @@ namespace API.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] UserForAuthenticationDto userForAuthentication)
         {
-            
+
             var user = await _userManager.FindByEmailAsync(userForAuthentication.Email);
 
-            if(user == null)
+            if (user == null)
             {
                 return Unauthorized(new APIResponse(401, "Wrong Email or Password"));
             }
 
-            if(!await _userManager.IsEmailConfirmedAsync(user)){
+            if (!await _userManager.IsEmailConfirmedAsync(user))
+            {
                 return Unauthorized(new APIResponse(401, "Email Hasnot Been Confirmed"));
             }
-                var checkPassword = await _userManager.CheckPasswordAsync(user, userForAuthentication.Password);
-            
-                if (!checkPassword)
+            var checkPassword = await _userManager.CheckPasswordAsync(user, userForAuthentication.Password);
+
+            if (!checkPassword)
             {
                 await _userManager.AccessFailedAsync(user);
 
@@ -99,25 +103,25 @@ namespace API.Controllers
                 }
                 return Unauthorized(new APIResponse(401, "Wrong Email or Password"));
             }
-                    
-                var signingCredentials = _jwtHandler.GetSigningCredentials();
-                var claims =await _jwtHandler.GetClaims(user);
-                var tokenOptions = _jwtHandler.GenerateTokenOptions(signingCredentials, claims);
-                var token = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
-                var response = new LoginResponse
-                {
-                    Token = token,
-                    isAuthenticationSuccesfull = true
 
-                };
-                return Ok(response);
-            }
+            var signingCredentials = _jwtHandler.GetSigningCredentials();
+            var claims = await _jwtHandler.GetClaims(user);
+            var tokenOptions = _jwtHandler.GenerateTokenOptions(signingCredentials, claims);
+            var token = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+            var response = new LoginResponse
+            {
+                Token = token,
+                isAuthenticationSuccesfull = true
+
+            };
+            return Ok(response);
+        }
 
         [HttpPost("ForgotPassword")]
-      
+
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
         {
-          
+
             var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
             if (user == null)
                 return BadRequest(new APIResponse(400, "The email doesnot exist"));
@@ -128,7 +132,7 @@ namespace API.Controllers
         {"email", forgotPasswordDto.Email }
     };
             var callback = QueryHelpers.AddQueryString(forgotPasswordDto.ClientURI, param);
-            var message = new MailRequest { ToEmail =user.Email, Subject="Reset Password Token", Body=callback};
+            var message = new MailRequest { ToEmail = user.Email, Subject = "Reset Password Token", Body = callback };
             await _mailService.SendEmailAsync(message);
             return Ok();
         }
@@ -145,7 +149,7 @@ namespace API.Controllers
             if (!resetPassResult.Succeeded)
             {
                 var errors = resetPassResult.Errors.Select(e => e.Description);
-                return new BadRequestObjectResult(new APIValidationErrorResponse {Errors=errors });
+                return new BadRequestObjectResult(new APIValidationErrorResponse { Errors = errors });
             }
             return Ok();
         }
@@ -161,6 +165,41 @@ namespace API.Controllers
                 return BadRequest("Invalid Email Confirmation Request");
             return Ok();
         }
-    }
+
+        [HttpPost("ExternalLogin")]
+        public async Task<IActionResult> ExternalLogin([FromBody] ExternalAuthDto externalAuth)
+        {
+            var payload = await _jwtHandler.VerifyGoogleToken(externalAuth);
+            if (payload == null)
+                return BadRequest("Invalid External Authentication.");
+            var info = new UserLoginInfo(externalAuth.Provider, payload.Subject, externalAuth.Provider);
+            var user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+            if (user == null)
+            {
+                user = await _userManager.FindByEmailAsync(payload.Email);
+                if (user == null)
+                {
+                    user = new User { Email = payload.Email, UserName = payload.Email };
+                    await _userManager.CreateAsync(user);
+                    //prepare and send an email for the email confirmation
+                    await _userManager.AddToRoleAsync(user, "Customer");
+                    await _userManager.AddLoginAsync(user, info);
+                }
+                else
+                {
+                    await _userManager.AddLoginAsync(user, info);
+                }
+            }
+            if (user == null)
+                return BadRequest("Invalid External Authentication.");
+            //check for the Locked out account
+            var signingCredentials = _jwtHandler.GetSigningCredentials();
+            var claims = await _jwtHandler.GetClaims(user);
+            var tokenOptions = _jwtHandler.GenerateTokenOptions(signingCredentials, claims);
+            var token = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+            return Ok(new LoginResponse { Token = token, isAuthenticationSuccesfull = true });
+
+        }
     }
 
+}
