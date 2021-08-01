@@ -3,10 +3,7 @@ using Core.Dtos.Products;
 using Core.Dtos.User;
 using Core.Entities.Identity;
 using Core.Entities.Product;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 
 namespace API.MappingProfiles
 {
@@ -17,8 +14,14 @@ namespace API.MappingProfiles
             CreateMap<UserForRegistrationDto, User>();
             CreateMap<ProductBrandDto, ProductBrand>();
             CreateMap<ProductTypeDto, ProductType>();
-            CreateMap<PictureDto, Picture>();
+           
             CreateMap<ProductCreationDto, Product>();
+
+            CreateMap<Picture, PictureDto>();
+            CreateMap<PictureDto, Picture>();
+            CreateMap<Product, ProductDto>()
+                .ForMember(x => x.ProductBrand, o => o.MapFrom(p => p.ProductBrand.Name))
+                .ForMember(x => x.ProductType, o => o.MapFrom(p => p.ProductType.Name));
         }
     }
 }

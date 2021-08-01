@@ -1,7 +1,9 @@
-﻿using AutoMapper;
+﻿using API.Helpers;
+using AutoMapper;
 using Core.Dtos.Products;
 using Core.Entities.Product;
 using Core.Interfaces;
+using Core.Specifications;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -24,10 +26,20 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetProducts()
+        public async Task<IActionResult> GetProducts([FromQuery] ProductSpecParam productParam)
         {
-            var products = await _unitOfWork.Repository<Product>().ListAllAsync();
-            return Ok(products);
+
+            var productWithSpec = new ProductWithTypeBrandPictureSpecification(productParam);
+
+            var productsList = await _unitOfWork.Repository<Product>().ListAsync(productWithSpec);
+            var productDto = _mapper.Map<IReadOnlyList<ProductDto>>(productsList);
+
+            var productCount = await _unitOfWork.Repository<Product>().CountAsync(productWithSpec);
+
+
+            var paginatedResult = new Pagination<ProductDto>(productParam.PageIndex, productParam.PageSize, productCount, productDto);
+
+            return Ok(paginatedResult);
         }
 
 
