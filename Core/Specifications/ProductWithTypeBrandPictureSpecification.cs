@@ -10,7 +10,7 @@ namespace Core.Specifications
     {
         public ProductWithTypeBrandPictureSpecification(ProductSpecParam productParam) : base(
            x =>
-           (string.IsNullOrEmpty(productParam.Search) || x.ToString().ToLower().Contains(productParam.Search.ToLower())) &&
+           (string.IsNullOrEmpty(productParam.Search) || x.Name.Contains(productParam.Search.ToLower())) &&
            (!productParam.BrandId.HasValue || x.ProductBrandId == productParam.BrandId) &&
            (!productParam.TypeId.HasValue || x.ProducTypeId == productParam.TypeId)
 
