@@ -2,6 +2,7 @@ using API.Extensions;
 using API.Middlewares;
 using Core.Interfaces;
 using Core.Models;
+using Infrastructure.Persistence;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -37,6 +38,7 @@ namespace API
             services.ConfigureCors();
             services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
             services.AddTransient<IMailService, MailService>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddAutoMapper(typeof(Startup));
             //order for validation error matters
             services.ConfigureValidationError();
