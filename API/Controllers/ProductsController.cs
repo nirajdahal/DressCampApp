@@ -42,7 +42,14 @@ namespace API.Controllers
             return Ok(paginatedResult);
         }
 
-
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProduct(int id)
+        {
+            var productWithTypesandBransdSpec = new ProductWithTypeBrandPictureSpecification(id);
+            var product = await _unitOfWork.Repository<Product>().GetEntityWithSpecs(productWithTypesandBransdSpec);
+            var productToReturn = _mapper.Map<ProductDto>(product);
+            return Ok(productToReturn);
+        }
         [HttpPost]
         public async Task<IActionResult> CreateProduct([FromBody] ProductCreationDto product)
         {
