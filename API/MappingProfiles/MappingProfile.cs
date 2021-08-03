@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using API.Helpers;
+using AutoMapper;
 using Core.Dtos.Products;
 using Core.Dtos.User;
 using Core.Entities.Identity;
@@ -17,7 +18,8 @@ namespace API.MappingProfiles
            
             CreateMap<ProductCreationDto, Product>();
 
-            CreateMap<Picture, PictureDto>();
+            CreateMap<Picture, PictureDto>()
+                .ForMember(x => x.PictureUrl, p => p.MapFrom<PictureURLResorver>());
             CreateMap<PictureDto, Picture>();
             CreateMap<Product, ProductDto>()
                 .ForMember(x => x.ProductBrand, o => o.MapFrom(p => p.ProductBrand.Name))
