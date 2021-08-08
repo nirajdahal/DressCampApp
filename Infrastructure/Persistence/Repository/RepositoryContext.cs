@@ -1,4 +1,5 @@
 ﻿using Core.Entities.Identity;
+using Core.Entities.Order;
 using Core.Entities.Product;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -20,5 +21,9 @@ namespace Infrastructure.Persistence
 
         public DbSet<ProductBrand> ProductBrands { get; set; }
         public DbSet<Picture> Pictures { get; set; }
+
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<DeliveryMethod> DeliveryMethods { get; set; }
     }
 }
