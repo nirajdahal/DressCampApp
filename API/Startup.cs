@@ -42,6 +42,8 @@ namespace API
             services.AddTransient<IMailService, MailService>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IBasketRepository, BasketRepository>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IUserBasketService, UserBasketService>();
             services.AddAutoMapper(typeof(Startup));
             //order for validation error matters
             services.ConfigureValidationError();

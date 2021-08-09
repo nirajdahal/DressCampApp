@@ -2,6 +2,7 @@
 using Core.Dtos.Basket;
 using Core.Entities.Basket;
 using Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -13,28 +14,38 @@ namespace API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class BasketController : ControllerBase
     {
         private readonly IBasketRepository _basketRepository;
+        private readonly IUserBasketService _userBasket;
         private readonly IMapper _mapper;
-        public BasketController(IBasketRepository basketRepository, IMapper mapper)
+        public BasketController(IBasketRepository basketRepository, IMapper mapper, IUserBasketService userBasket)
         {
             _mapper = mapper;
             _basketRepository = basketRepository;
+            _userBasket = userBasket;
         }
 
         [HttpGet]
         public async Task<ActionResult<CustomerBasket>> GetBasketById(string id)
         {
-            var basket = await _basketRepository.GetBasketAsync(id);
 
-            return Ok(basket ?? new CustomerBasket(id));
+            var email = User.Claims.ToList()[0].Value;
+            var basketId = await _userBasket.GetBasketIdForUser(email);
+          
+            var basket = await _basketRepository.GetBasketAsync(basketId);
+
+            return Ok(basket ?? new CustomerBasket(basketId));
         }
 
         [HttpPost]
         public async Task<ActionResult<CustomerBasket>> UpdateBasket(CustomerBasketDto basket)
         {
-
+            
+            var email = User.Claims.ToList()[0].Value;
+            var basketId = await _userBasket.GetBasketIdForUser(email);
+            basket.Id = basketId;
             var basketToUpdate = _mapper.Map<CustomerBasketDto, CustomerBasket>(basket);
             var updatedBasket = await _basketRepository.UpdateBasketAsync(basketToUpdate);
             return Ok(updatedBasket);
@@ -44,6 +55,8 @@ namespace API.Controllers
         public async Task DeleteBasketAsync(string id)
         {
             await _basketRepository.DeleteBasketAsync(id);
+            var email = User.Claims.ToList()[0].Value;
+            await _userBasket.RemoveBasketIdFromUser(email);
         }
     }
 }
