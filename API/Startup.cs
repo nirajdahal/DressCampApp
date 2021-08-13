@@ -3,7 +3,7 @@ using API.Middlewares;
 using Core.Interfaces;
 using Core.Models;
 using Hangfire;
-
+using HangfireBasicAuthenticationFilter;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -67,7 +67,15 @@ namespace API
                 endpoints.MapControllers();
             });
 
-            app.UseHangfireDashboard();
+
+            app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            {
+                Authorization = new[] { new HangfireCustomBasicAuthenticationFilter { User = Configuration.GetValue<string> ("Hangfire:UserName"), Pass = Configuration.GetValue<string> ("Hangfire:Password") }
+                }
+            });
+
+            
+
         }
     }
 }
