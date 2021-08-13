@@ -12,12 +12,12 @@ namespace Infrastructure.Services
 {
     public class UserBasketService : IUserBasketService
     {
-        private readonly IBasketRepository _basketRepo;
+       
         private readonly UserManager<User> _userManager;
       
-        public UserBasketService(IBasketRepository basketRepo, UserManager<User> userManager)
+        public UserBasketService( UserManager<User> userManager)
         {
-            _basketRepo = basketRepo;
+         
             _userManager = userManager;
 
         }

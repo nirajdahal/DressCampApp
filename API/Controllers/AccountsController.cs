@@ -25,15 +25,16 @@ namespace API.Controllers
         private readonly UserManager<User> _userManager;
         private readonly IMapper _mapper;
         private readonly JwtHandler _jwtHandler;
-        private readonly IMailService _mailService;
+       
+        private readonly IBackgroundService _backgroundService;
 
-        public AccountsController(UserManager<User> userManager, IMapper mapper, JwtHandler jwtHandler, IMailService mailService)
+        public AccountsController(IBackgroundService backgroundService, UserManager<User> userManager, IMapper mapper, JwtHandler jwtHandler)
         {
             _userManager = userManager;
             _mapper = mapper;
             _jwtHandler = jwtHandler;
-            _mailService = mailService;
-
+  
+            _backgroundService = backgroundService;
         }
 
 
@@ -67,7 +68,7 @@ namespace API.Controllers
     };
             var callback = QueryHelpers.AddQueryString(userForRegistration.ClientURI, param);
             var message = new MailRequest { ToEmail = user.Email, Subject = "Email Confirmation Token", Body = callback };
-            await _mailService.SendEmailAsync(message);
+            _backgroundService.SendMailInTheBackground(message);
             await _userManager.AddToRoleAsync(user, "Customer");
             return StatusCode(201);
         }
@@ -97,7 +98,7 @@ namespace API.Controllers
                 {
                     var content = $"Your account is locked out. To reset the password click this link: {userForAuthentication.clientURI}";
                     var message = new MailRequest { ToEmail = user.Email, Subject = "Account Loclout", Body = content };
-                    await _mailService.SendEmailAsync(message);
+                    _backgroundService.SendMailInTheBackground(message);
 
                     return Unauthorized(new APIResponse(401, "Your email has been locked out. Check you email"));
                 }
@@ -133,7 +134,7 @@ namespace API.Controllers
     };
             var callback = QueryHelpers.AddQueryString(forgotPasswordDto.ClientURI, param);
             var message = new MailRequest { ToEmail = user.Email, Subject = "Reset Password Token", Body = callback };
-            await _mailService.SendEmailAsync(message);
+            _backgroundService.SendMailInTheBackground(message);
             return Ok();
         }
 

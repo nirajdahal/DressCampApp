@@ -2,22 +2,14 @@ using API.Extensions;
 using API.Middlewares;
 using Core.Interfaces;
 using Core.Models;
-using Infrastructure.Persistence;
-using Infrastructure.Persistence.Repository;
+using Hangfire;
+
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace API
 {
@@ -36,28 +28,24 @@ namespace API
             services.AddControllers();
             services.ConfigureSqlContext(Configuration);
             services.ConfigureIdentity(Configuration);
+            
             services.AddScoped<JwtHandler>();
             services.ConfigureCors();
-            services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
-            services.AddTransient<IMailService, MailService>();
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped<IBasketRepository, BasketRepository>();
-            services.AddScoped<IOrderService, OrderService>();
-            services.AddScoped<IUserBasketService, UserBasketService>();
+            services.ConfigureMailService(Configuration);
+            services.ConfigureRepositories();
+            services.AddScoped<IBackgroundService, Infrastructure.Services.BackgroundService>();
             services.AddAutoMapper(typeof(Startup));
             //order for validation error matters
             services.ConfigureValidationError();
+            services.ConfigureRedis(Configuration);
+            services.ConfigureHangfireContext(Configuration); 
+            services.AddHangfireServer();
 
-            services.AddSingleton<IConnectionMultiplexer>(c =>
-            {
-                var configuration = ConfigurationOptions.Parse(Configuration.GetConnectionString("Redis"), true);
-                return ConnectionMultiplexer.Connect(configuration);
-            });
 
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app)
         {
             //Middleware for handling 500 error
             app.UseMiddleware<DefaultExceptionHandlerMiddleware>();
@@ -78,6 +66,8 @@ namespace API
             {
                 endpoints.MapControllers();
             });
+
+            app.UseHangfireDashboard();
         }
     }
 }

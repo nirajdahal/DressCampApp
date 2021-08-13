@@ -1,6 +1,11 @@
 ﻿using API.Exceptions;
 using Core.Entities.Identity;
+using Core.Interfaces;
+using Core.Models;
+using Hangfire;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Repository;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,9 +35,23 @@ namespace API.Extensions
        });
 
 
-        public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration) =>
-                   services.AddDbContext<RepositoryContext>(opts =>
+        public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddDbContext<RepositoryContext>(opts =>
                        opts.UseSqlServer(configuration.GetConnectionString("SqlConnection"), b => b.MigrationsAssembly("API")));
+         
+        }
+
+        public static void ConfigureHangfireContext(this IServiceCollection services, IConfiguration Configuration)
+        {
+            
+            services.AddHangfire(x =>
+            {
+                x.UseSqlServerStorage(Configuration.GetConnectionString("SqlConnection"));
+            });
+        }
+
+
         public static void ConfigureIdentity(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddIdentity<User, IdentityRole>(opt => {
@@ -87,5 +107,29 @@ namespace API.Extensions
             });
         }
 
+        public static void ConfigureMailService(this IServiceCollection services, IConfiguration Configuration)
+        {
+            services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
+            services.AddTransient<IMailService, MailService>();
+            
+        }
+
+        public static void ConfigureRepositories(this IServiceCollection services)
+        {
+            
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IBasketRepository, BasketRepository>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IUserBasketService, UserBasketService>();
+        }
+
+        public static void ConfigureRedis(this IServiceCollection services, IConfiguration Configuration)
+        {
+            services.AddSingleton<IConnectionMultiplexer>(c =>
+            {
+                var configuration = ConfigurationOptions.Parse(Configuration.GetConnectionString("Redis"), true);
+                return ConnectionMultiplexer.Connect(configuration);
+            });
+        }
     }
 }
