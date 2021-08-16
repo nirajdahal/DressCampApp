@@ -45,7 +45,7 @@ namespace API.Controllers
             if (order == null) return BadRequest(new APIResponse(400, "Problem creating order"));
 
 
-            var message = new MailRequest { ToEmail = email, Subject = "Reset Password Token", Body = "Your order has been created" };
+            var message = new MailRequest { ToEmail = email, Subject = "Order Created", Body = "Your order has been created" };
             await _mailService.SendEmailAsync(message);
           
             return Ok(order);
